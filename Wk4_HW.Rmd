@@ -1,0 +1,85 @@
+---
+title: "wk4_homework"
+author: "Loubna"
+date: "11/2/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+# load in libraries
+
+```{r}
+library(tidyverse)
+library(magrittr)
+library(dplyr)
+library(here)
+library(janitor)
+library(plotly)
+library(maptools)
+library(sf)
+library(here)
+library(countrycode)
+library(tmap)
+
+```
+
+# read in Data
+
+```{r}
+
+  #Read in data
+  gender_inequality_index <- read_csv(here("Data","Gender Inequality Index (GII).csv"),
+                                      locale = locale(encoding = "latin1"),
+                                      na = "..", skip=5)
+  
+  #read shape file
+  World_Countries <- st_read(here("Data", "World_Countries_(Generalized).geojson"))
+  
+
+```
+
+# Process the Data
+
+```{r}
+
+    #extract the coloumns i need and clean them
+
+    gender_inequality_2010_2019 <- gender_inequality_index %>%
+    clean_names() %>%
+    select(hdi_rank, country, x2010, x2019) 
+```
+
+```{r}
+
+  #adding new colomns and selecting only rows we want 1 to 189. 
+  #country is the column to take it from.
+  #country.name is part of the function that identifies it as a country name
+  #iso2c pick a 2 digit country code to add to column named iso_code
+
+  gender_inequality_2010_2019_clean_newCol <- gender_inequality_2010_2019 %>%
+    mutate(difference=x2019-x2010)%>%
+    slice(1:189,)%>%
+    mutate(iso_code=countrycode(country,'country.name','iso2c'))
+```
+
+# Join Data
+
+```{r}
+
+Joined <- World_Countries %>%
+    clean_names() %>%
+    left_join(.,
+              gender_inequality_2010_2019_clean_newCol,
+              by = c("aff_iso"="iso_code"))
+  
+```
+
+
+# Map the differences
+
+```{r}
+tmap_mode("plot")
+qtm(Joined ='difference')
+
+```
+
